@@ -8,12 +8,10 @@ pipeline {
 
   options {
     timestamps()
-    ansiColor('xterm')
     buildDiscarder(logRotator(numToKeepStr: '20'))
   }
 
   stages {
-
     stage('Checkout') {
       steps {
         checkout scm
@@ -46,8 +44,6 @@ pipeline {
         withCredentials([string(credentialsId: 'sonar_token', variable: 'SONAR_TOKEN')]) {
           sh '''
             ./node_modules/.bin/jest --coverage --silent || true
-
-            # SonarCloud (change URL if using local Sonar):
             if command -v sonar-scanner >/dev/null 2>&1; then
               sonar-scanner \
                 -Dsonar.login=$SONAR_TOKEN \
@@ -73,7 +69,6 @@ pipeline {
             aquasec/trivy:latest image --exit-code 0 --severity MEDIUM,HIGH,CRITICAL \
             $DOCKER_IMAGE:$GIT_COMMIT
 
-          # Fail if CRITICAL
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
             aquasec/trivy:latest image --exit-code 1 --severity CRITICAL \
             $DOCKER_IMAGE:$GIT_COMMIT || (echo "Critical vulns found"; exit 1)
